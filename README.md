@@ -40,5 +40,5 @@ warning/critical
 
 ## License
 
-PowerDNS Authoritative check is licensed under the terms of the GNU
+PowerDNS Recursive Resolver check is licensed under the terms of the GNU
 General Public License Version 3.
