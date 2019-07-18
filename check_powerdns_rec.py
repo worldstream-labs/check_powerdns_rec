@@ -19,7 +19,7 @@
 ################################################################################
 
 __author__ = 'Remi Frenay <rf@worldstream.nl>'
-__version__ = '1.0'
+__version__ = '1.0.0'
 __plugin_name__ = 'check_powerdns_rec.py'
 
 import os
