@@ -31,7 +31,6 @@ import json
 import sys
 import time
 
-# Clean area interfaces
 pdns_tool = 'rec_control'
 
 querylist = ['questions']
@@ -161,19 +160,13 @@ class PowerDnsApi:
         try:
             result = requests.get(url, headers=headers, verify=False)
             if result.content == "Unauthorized":
-                #return 1, {"error": "Incorrect API Key!"}
                 raise MyPdnsError("Incorrect API Key!")
             if result.status_code != 200:
-                #return 1, object
                 raise MyPdnsError("API unexpected result code %d" % result.status_code)
             object = json.loads(result.content)
             return object
-        #except ValueError:
-        #raise MyPdnsError("Unexpected response: %s" % result.content)
-        #return 1, {"error": "Unexpected response: %s" % result.content}
         except requests.exceptions.ConnectionError:
             raise MyPdnsError("Error connecting to %s" % url)
-            #return 1, {"error": "Error connecting to %s" % url}
 
 class PowerDnsCtrlTool:
     """PowerDNS Control Tool"""
