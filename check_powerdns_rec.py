@@ -29,6 +29,7 @@ import subprocess
 import requests
 import json
 import sys
+import tempfile
 import time
 
 pdns_tool = 'rec_control'
@@ -79,8 +80,8 @@ def parse_args():
     parser.add_argument('-n', '--config-name', help='Name of PowerDNS virtual configuration', type=str, default='')
     parser.add_argument('-w', '--warning', help='Warning threshold (Queries/s)', type=int, default=0)
     parser.add_argument('-c', '--critical', help='Critical threshold (Queries/s)', type=int, default=0)
-    parser.add_argument('-s', '--scratch', help='Scratch / temp base directory. Must exist. (default: /tmp)', type=str,
-                        default='/tmp')
+    parser.add_argument('-s', '--scratch', help='Scratch / temp base directory. Must exist. (Default value will be determined for by gettempdir function)', type=str,
+                        default='')
     parser.add_argument('-p', '--perfdata', help='Print performance data, (default: off)', action='store_true')
     parser.add_argument('--skipsecurity', help='Skip PowerDNS security status, (default: off)', action='store_true')
 
@@ -199,6 +200,8 @@ class PowerDnsCtrlTool:
 
 
 def get_fname(_path_base, _config):
+    if _path_base == '':
+        _path_base = tempfile.gettempdir()
     # returns cache file name
     if _config == '':
         return os.path.join(_path_base, 'monitor-pdns-rec')
