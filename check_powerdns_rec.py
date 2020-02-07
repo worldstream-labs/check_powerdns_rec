@@ -72,7 +72,7 @@ def parse_args():
     group.add_argument('-A', '--api-host', help='PowerDNS API host (do not combine with --socket-dir or --test)', type=str)
     group.add_argument('-T', '--test', help='Test case; Use fake data (do not combine with --api-host or --socket-dir)',
                         action='store_true')
-    group.add_argument('-S', '--socket-dir', help='PDNS Control tool Socket directory (do not combine with --socket-dir or --test)', type=str, default='')
+    group.add_argument('-S', '--socket-dir', help='PDNS Control tool Socket directory (do not combine with --api-host or --test)', type=str, default='')
 
     parser.add_argument('-P', '--api-port', help='PowerDNS API port (default 8082)', type=int, default=8082)
     parser.add_argument('-k', '--api-key', help='PowerDNS API key', type=str, default='')
