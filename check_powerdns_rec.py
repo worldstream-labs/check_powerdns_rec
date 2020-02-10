@@ -54,6 +54,7 @@ def parse_args():
         print('Error importing library python-argparse')
         sys.exit(MStatus().UNKNOWN)
 
+    tempdir = tempfile.gettempdir()
     parser = argparse.ArgumentParser(
         prog=__plugin_name__,
         description='Icinga/Nagios plugin, interned to check PowerDNS status using either rec_control or the API.'
@@ -72,17 +73,15 @@ def parse_args():
                        action='store_true')
     group.add_argument('-S', '--socket-dir',
                        help='Directory where PowerDNS controlsocket will live (do not combine with --api-host or --test)',
-                       type=str, default='')
+                       type=str)
 
     parser.add_argument('-P', '--api-port', help='PowerDNS API port (default 8082)', type=int, default=8082)
     parser.add_argument('-k', '--api-key', help='PowerDNS API key', type=str, default='')
-    parser.add_argument('-n', '--config-name', help='Name of PowerDNS virtual configuration', type=str, default='')
+    parser.add_argument('-n', '--config-name', help='Name of PowerDNS virtual configuration', type=str)
     parser.add_argument('-w', '--warning', help='Warning threshold (Queries/s)', type=int, default=0)
     parser.add_argument('-c', '--critical', help='Critical threshold (Queries/s)', type=int, default=0)
     parser.add_argument('-s', '--scratch',
-                        help='Scratch/temp directory. (Default value will be determined by gettempdir function)',
-                        type=str,
-                        default='')
+                        help="Scratch/temp directory. (Default %s)" % tempdir, type=str, default=tempdir)
     parser.add_argument('-p', '--perfdata', help='Print performance data, (default: off)', action='store_true')
     parser.add_argument('--skipsecurity', help='Skip PowerDNS security status, (default: off)', action='store_true')
 
@@ -203,7 +202,7 @@ class PowerDnsCtrlTool:
             cli = [self.pdns_tool]
             if self.socket_dir:
                 cli.append('--socket-dir=%s' % self.socket_dir)
-            if self.config_name != '':
+            if self.config_name:
                 cli.append('--config-name=%s' % self.config_name)
             cli.append(cmd)
 
@@ -232,13 +231,11 @@ class PowerDnsFake:
 
 
 def get_fname(_path_base, _config):
-    if _path_base == '':
-        _path_base = tempfile.gettempdir()
     # returns cache file name
-    if _config == '':
-        return os.path.join(_path_base, 'monitor-pdns-rec')
-    else:
+    if _config:
         return os.path.join(_path_base, 'monitor-pdns-rec-' + _config)
+    else:
+        return os.path.join(_path_base, 'monitor-pdns-rec')
 
 
 def load_measurement(_filename):
