@@ -18,37 +18,15 @@ warning/critical
 
 
 ## Usage
-	usage: check_powerdns_rec.py [-h] [-A API_HOST | -T | -S SOCKET_DIR]
-                             [-P API_PORT] [-k API_KEY] [-n CONFIG_NAME]
-                             [-w WARNING] [-c CRITICAL] [-s SCRATCH] [-p]
-                             [--skipsecurity] [-V]
 
-
-	-h, --help            show this help message and exit
-	-A API_HOST, --api-host API_HOST
-	                      PowerDNS API host (do not combine with --socket-dir or
-	                      --test)
-	-T, --test            Test case; Use fake data (do not combine with --api-
-	                      host or --socket-dir)
-	-S SOCKET_DIR, --socket-dir SOCKET_DIR
-	                      PDNS Control tool Socket directory (do not combine
-	                      with --socket-dir or --test)
-	-P API_PORT, --api-port API_PORT
-	                      PowerDNS API port (default 8082)
-	-k API_KEY, --api-key API_KEY
-	                      PowerDNS API key
-	-n CONFIG_NAME, --config-name CONFIG_NAME
-	                      Name of PowerDNS virtual configuration
-	-w WARNING, --warning WARNING
-	                      Warning threshold (Queries/s)
-	-c CRITICAL, --critical CRITICAL
-	                      Critical threshold (Queries/s)
-	-s SCRATCH, --scratch SCRATCH
-	                      Scratch / temp base directory. Must exist. (default: /tmp)
-	-p, --perfdata        Print performance data, (default: off)
-	--skipsecurity        Skip PowerDNS security status, (default: off)
-	-V, --version         show program's version number and exit
-
+For example: check the statistics using the API running on 127.0.0.1:8081 using key "myapikey".
+```sh
+./check_powerdns_rec.py -A 127.0.0.1 -P 8081 -k myapikey -p
+```
+Use --help argument for a description of all arguments. 
+```sh
+./check_powerdns_rec.py --help
+```
 
 ## License
 
