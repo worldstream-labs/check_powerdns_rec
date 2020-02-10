@@ -71,10 +71,8 @@ def parse_args():
                        type=str)
     group.add_argument('-T', '--test', help='Test case; Use fake data (do not combine with --api-host or --socket-dir)',
                        action='store_true')
-    group.add_argument('-S', '--socket-dir',
-                       help='Directory where PowerDNS controlsocket will live (do not combine with --api-host or --test)',
-                       type=str)
-
+    group.add_argument('-S', '--socket-dir', help='Directory where PowerDNS controlsocket will live '
+                                                  '(do not combine with --api-host or --test)', type=str)
     parser.add_argument('-P', '--api-port', help='PowerDNS API port (default 8082)', type=int, default=8082)
     parser.add_argument('-k', '--api-key', help='PowerDNS API key', type=str, default='')
     parser.add_argument('-n', '--config-name', help='Name of PowerDNS virtual configuration', type=str)
@@ -239,13 +237,10 @@ def get_fname(_path_base, _config):
 
 
 def load_measurement(_filename):
-    try:
-        fd = open(_filename, 'rb')
-        _data_old = pickle.load(fd)
-        fd.close()
-        return _data_old
-    except IOError:
-        return dict()
+    fd = open(_filename, 'rb')
+    _data_old = pickle.load(fd)
+    fd.close()
+    return _data_old
 
 
 def save_measurement(_filename, _data_new):
@@ -318,7 +313,10 @@ if __name__ == '__main__':
             data_old['epoch'] -= 1
         else:
             filename = get_fname(args.scratch, args.config_name)
-            data_old = load_measurement(filename)
+            try:
+                data_old = load_measurement(filename)
+            except IOError:
+                data_old = dict()
             save_measurement(filename, data_new)
         (data_avg, queries) = calc_avgps(data_old, data_new)
 
