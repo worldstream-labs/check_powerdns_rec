@@ -18,25 +18,15 @@ warning/critical
 
 
 ## Usage
-	usage: check_powerdns_rec.py [-h] [-S SOCKET_DIR] [-n CONFIG_NAME]
-                              [-w WARNING] [-c CRITICAL] [-s SCRATCH] [-p]
-                              [--skipsecurity] [-T] [-V]
 
-	-h, --help            show this help message and exit
-	-S SOCKET_DIR, --socket-dir SOCKET_DIR
-	                      Where the PowerDNS controlsocket will live
-	-n CONFIG_NAME, --config-name CONFIG_NAME
-	                      Name of PowerDNS virtual configuration
-	-w WARNING, --warning WARNING
-	                      Warning threshold (Queries/s)
-	-c CRITICAL, --critical CRITICAL
-	                      Critical threshold (Queries/s)
-	-s SCRATCH, --scratch SCRATCH
-	                      Scratch / temp base directory. Must exist. (default: /tmp)
-	-p, --perfdata        Print performance data, (default: off)
-	--skipsecurity        Skip PowerDNS security status, (default: off)
-	-T, --test            Test case; Use fake data and do not run pdns_control
-	-V, --version         show program's version number and exit
+For example: check the statistics using the API running on 127.0.0.1:8081 using key "myapikey".
+```sh
+./check_powerdns_rec.py -A 127.0.0.1 -P 8081 -k myapikey -p
+```
+Use --help argument for a description of all arguments. 
+```sh
+./check_powerdns_rec.py --help
+```
 
 ## License
 
