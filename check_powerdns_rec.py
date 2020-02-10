@@ -290,7 +290,6 @@ if __name__ == '__main__':
     try:
         args = parse_args()
 
-        data_new = dict()
         if args.test:
             pdns = PowerDnsFake()
             result = pdns.get_data_ok()
@@ -302,6 +301,7 @@ if __name__ == '__main__':
             result = pdns.get_all()
 
         # Keep items defined in watchlist
+        data_new = dict()
         for key in result:
             if key in watchlist:
                 data_new[key] = result[key]
