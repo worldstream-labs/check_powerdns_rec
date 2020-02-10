@@ -167,7 +167,7 @@ class PowerDnsApi:
         headers = {'X-API-Key': self.api_key}
         try:
             get_result = requests.get(url, headers=headers, verify=False)
-            if get_result.content == "Unauthorized":
+            if get_result.status_code == 401:
                 raise MyPdnsError("Incorrect API Key!")
             if get_result.status_code != 200:
                 raise MyPdnsError("API unexpected result code %d" % get_result.status_code)
