@@ -32,21 +32,17 @@ import sys
 import tempfile
 import time
 
-pdns_tool = 'rec_control'
 
 querylist = ['questions']
-avglist = querylist + ['nxdomain-answers', 'noerror-answers', 'servfail-answers-answers', 'recursing-questions',
+avglist = querylist + ['nxdomain-answers', 'noerror-answers', 'servfail-answers', 'recursing-questions',
                        'recursing-answers', 'answers-slow', 'answers0-1', 'answers1-10', 'answers10-100',
                        'answers100-1000', 'over-capacity-drops', 'policy-drops', 'cache-hits', 'cache-misses',
                        'packetcache-hits', 'packetcache-misses']
 watchlist = avglist + ['qa-latency', 'security-status']
 
 
-
-
 class MyPdnsError(Exception):
     pass
-
 
 
 # noinspection PyTypeChecker
@@ -55,13 +51,13 @@ def parse_args():
     try:
         import argparse
     except ImportError:
-        print 'Error importing library python-argparse'
+        print('Error importing library python-argparse')
         sys.exit(MStatus().UNKNOWN)
 
     parser = argparse.ArgumentParser(
         prog=__plugin_name__,
         description='Icinga/Nagios plugin, interned to check PowerDNS status using either rec_control or the API.'
-                    'rec_control is the default interface to obtain statistisc'
+                    'rec_control is the default interface to obtain statistics'
                     'A non-zero exit code is generated, if the numbers of DNS queries per seconds exceeds'
                     ' warning/critical values. Additionally the plugin checks for the security-status of PowerDNS. ',
         epilog='This program is free software: you can redistribute it and/or modify '
@@ -70,24 +66,30 @@ def parse_args():
                'at your option) any later version. Author: ' + __author__)
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-A', '--api-host', help='PowerDNS API host (do not combine with --socket-dir or --test)', type=str)
+    group.add_argument('-A', '--api-host', help='PowerDNS API host (do not combine with --socket-dir or --test)',
+                       type=str)
     group.add_argument('-T', '--test', help='Test case; Use fake data (do not combine with --api-host or --socket-dir)',
-                        action='store_true')
-    group.add_argument('-S', '--socket-dir', help='PDNS Control tool Socket directory (do not combine with --api-host or --test)', type=str, default='')
+                       action='store_true')
+    group.add_argument('-S', '--socket-dir',
+                       help='Directory where PowerDNS controlsocket will live (do not combine with --api-host or --test)',
+                       type=str, default='')
 
     parser.add_argument('-P', '--api-port', help='PowerDNS API port (default 8082)', type=int, default=8082)
     parser.add_argument('-k', '--api-key', help='PowerDNS API key', type=str, default='')
     parser.add_argument('-n', '--config-name', help='Name of PowerDNS virtual configuration', type=str, default='')
     parser.add_argument('-w', '--warning', help='Warning threshold (Queries/s)', type=int, default=0)
     parser.add_argument('-c', '--critical', help='Critical threshold (Queries/s)', type=int, default=0)
-    parser.add_argument('-s', '--scratch', help='Scratch / temp base directory. Must exist. (Default value will be determined for by gettempdir function)', type=str,
+    parser.add_argument('-s', '--scratch',
+                        help='Scratch/temp directory. (Default value will be determined by gettempdir function)',
+                        type=str,
                         default='')
     parser.add_argument('-p', '--perfdata', help='Print performance data, (default: off)', action='store_true')
     parser.add_argument('--skipsecurity', help='Skip PowerDNS security status, (default: off)', action='store_true')
 
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + __version__)
-    args = parser.parse_args()
-    return args
+    _args = parser.parse_args()
+    return _args
+
 
 class MStatus:
     """Monitoring status enum"""
@@ -97,6 +99,7 @@ class MStatus:
         self.WARNING = 1
         self.CRITICAL = 2
         self.UNKNOWN = 3
+
 
 class Monitoring:
     """"Monitoring"""
@@ -151,7 +154,12 @@ class PowerDnsApi:
         self.api_key = api_key
 
     def statistics(self):
-        return self.execute('/api/v1/servers/localhost/statistics')
+        data = dict()
+        json_object = self.execute('/api/v1/servers/localhost/statistics')
+        for val in json_object:
+            if ('type' in val) and ('name' in val) and ('value' in val) and (val['type'] == 'StatisticItem'):
+                data[val['name']] = int(val['value'])
+        return data
 
     def execute(self, path):
         """Connect with PowerDNS API to execute request"""
@@ -159,44 +167,68 @@ class PowerDnsApi:
         url = "http://%s:%d%s" % (self.api_host, self.api_port, path)
         headers = {'X-API-Key': self.api_key}
         try:
-            result = requests.get(url, headers=headers, verify=False)
-            if result.content == "Unauthorized":
+            get_result = requests.get(url, headers=headers, verify=False)
+            if get_result.content == "Unauthorized":
                 raise MyPdnsError("Incorrect API Key!")
-            if result.status_code != 200:
-                raise MyPdnsError("API unexpected result code %d" % result.status_code)
-            object = json.loads(result.content)
-            return object
+            if get_result.status_code != 200:
+                raise MyPdnsError("API unexpected result code %d" % get_result.status_code)
+            json_object = json.loads(get_result.content)
+            return json_object
         except requests.exceptions.ConnectionError:
             raise MyPdnsError("Error connecting to %s" % url)
 
+
 class PowerDnsCtrlTool:
     """PowerDNS Control Tool"""
+
+    pdns_tool = 'rec_control'
 
     def __init__(self, socket_dir, config_name):
         self.socket_dir = socket_dir
         self.config_name = config_name
 
     def get_all(self):
-        return self.execute('get-all')
+        data = dict()
+        stdout = self.execute('get-all')
+        for val in stdout.splitlines():
+            m = re.match(r"^([a-z0-9\-]+)\s+(\d+)$", val)
+            if m:
+                data[m.group(1)] = int(m.group(2))
+        return data
 
     def execute(self, cmd):
         """Connect with PowerDNS Control tool to execute request"""
 
         try:
-            cli = [pdns_tool]
+            cli = [self.pdns_tool]
             if self.socket_dir:
                 cli.append('--socket-dir=%s' % self.socket_dir)
             if self.config_name != '':
                 cli.append('--config-name=%s' % self.config_name)
             cli.append(cmd)
 
-            MyOut = subprocess.Popen(cli, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            stdout, stderr = MyOut.communicate()
-            if MyOut.returncode != 0:
+            process = subprocess.Popen(cli, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            stdout, stderr = process.communicate()
+            if process.returncode != 0:
                 raise MyPdnsError(stdout)
             return stdout
         except OSError:
-            raise MyPdnsError("Control command '%s' not found." % pdns_tool)
+            raise MyPdnsError("Control command '%s' not found." % self.pdns_tool)
+
+
+class PowerDnsFake:
+    """PowerDNS Fake class for testing"""
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def get_data_ok():
+        data = {'nxdomain-answers': 0, 'noerror-answers': 0, 'servfail-answers': 0, 'recursing-questions': 0,
+                'recursing-answers': 0, 'answers-slow': 0, 'answers0-1': 0, 'answers1-10': 0, 'answers10-100': 0,
+                'answers100-1000': 0, 'over-capacity-drops': 0, 'policy-drops': 0, 'cache-hits': 0, 'cache-misses': 0,
+                'packetcache-hits': 0, 'packetcache-misses': 0, 'qa-latency': 0, 'security-status': 1}
+        return data
 
 
 def get_fname(_path_base, _config):
@@ -220,9 +252,12 @@ def load_measurement(_filename):
 
 
 def save_measurement(_filename, _data_new):
-    fd = open(_filename, 'wb')
-    pickle.dump(_data_new, fd)
-    fd.close()
+    try:
+        fd = open(_filename, 'wb')
+        pickle.dump(_data_new, fd)
+        fd.close()
+    except IOError:
+        raise MyPdnsError("Could not write measurement to %s" % _filename)
 
 
 def parse_pdns(_stdout):
@@ -235,35 +270,13 @@ def parse_pdns(_stdout):
                 _new_data[m.group(1)] = int(m.group(2))
     return _new_data
 
-def fake_statistics():
-    stdout = "all-outqueries\t0\nanswers-slow\t0\nanswers0-1\t0\nanswers1-10\t0\nanswers10-100\t0\n" \
-             "answers100-1000\t0\ncache-entries\t0\ncache-hits\t0\ncache-misses\t0\ncase-mismatches\t0\n" \
-             "chain-resends\t0\nclient-parse-errors\t0\nconcurrent-queries\t0\ndlg-only-drops\t0\n" \
-             "dont-outqueries\t0\nedns-ping-matches\t0\nedns-ping-mismatches\t0\nfailed-host-entries\t0\n" \
-             "ipv6-outqueries\t0\nipv6-questions\t0\nmalloc-bytes\t0\nmax-mthread-stack\t0\nnegcache-entries\t0\n" \
-             "no-packet-error\t0\nnoedns-outqueries\t0\nnoerror-answers\t0\nnoping-outqueries\t0\n" \
-             "nsset-invalidations\t0\nnsspeeds-entries\t0\nnxdomain-answers\t0\noutgoing-timeouts\t0\n" \
-             "over-capacity-drops\t0\npacketcache-entries\t0\npacketcache-hits\t0\npacketcache-misses\t0\n" \
-             "policy-drops\t0\nqa-latency\t0\nquestions\t0\nresource-limits\t0\nserver-parse-errors\t0\n" \
-             "servfail-answers\t0\nspoof-prevents\t0\nsys-msec\t0\ntcp-client-overflow\t0\ntcp-clients\t0\n" \
-             "tcp-outqueries\t0\ntcp-questions\t0\nthrottle-entries\t0\nthrottled-out\t0\n" \
-             "throttled-outqueries\t0\nunauthorized-tcp\t0\nunauthorized-udp\t0\nunexpected-packets\t0\n" \
-             "unreachables\t0\nuptime\t0\nuser-msec\t0\nsecurity-status\t1\n"
 
-    _data_new = parse_pdns(stdout)
-    _data_new['epoch'] = int(time.time())
-
-    _data_old = _data_new.copy()
-    _data_old['epoch'] -= 1
-    return _data_old, _data_new
-
-def parse2_pdns(_stdout):
-    _new_data = dict()
-
-    for val in _stdout:
-        if ('type' in val) and ('name' in val) and ('value' in val) and (val['type'] == 'StatisticItem') and (val['name'] in watchlist):
-            _new_data[val['name']] = int(val['value'])
-    return _new_data
+def filter_data(_data_raw, _watchlist):
+    _data_new = dict()
+    for _key in _data_raw:
+        if _key in _watchlist:
+            _data_new[_key] = _data_raw[_key]
+    return _data_new
 
 
 def calc_avgps(_data_old, _data_new):
@@ -296,23 +309,31 @@ if __name__ == '__main__':
     try:
         args = parse_args()
 
+        data_new = dict()
         if args.test:
-            data_old, data_new = fake_statistics()
+            pdns = PowerDnsFake()
+            result = pdns.get_data_ok()
+        elif args.api_host:
+            pdns = PowerDnsApi(args.api_host, args.api_port, args.api_key)
+            result = pdns.statistics()
         else:
-            if args.api_host:
-                pdns = PowerDnsApi(args.api_host, args.api_port, args.api_key)
-                result = pdns.statistics()
-                data_new = parse2_pdns(result)
-            else:
-                pdns = PowerDnsCtrlTool(args.socket_dir, args.config_name)
-                result = pdns.get_all()
-                data_new = parse_pdns(result)
-            # noinspection PyUnboundLocalVariable
-            data_new['epoch'] = int(time.time())
+            pdns = PowerDnsCtrlTool(args.socket_dir, args.config_name)
+            result = pdns.get_all()
+
+        # Keep items defined in watchlist
+        for key in result:
+            if key in watchlist:
+                data_new[key] = result[key]
+        if len(data_new) == 0:
+            raise MyPdnsError("No data available")
+        data_new['epoch'] = int(time.time())
+        if args.test:
+            data_old = data_new.copy()
+            data_old['epoch'] -= 1
+        else:
             filename = get_fname(args.scratch, args.config_name)
             data_old = load_measurement(filename)
-            if len(data_new) > 1:
-                save_measurement(filename, data_new)
+            save_measurement(filename, data_new)
         (data_avg, queries) = calc_avgps(data_old, data_new)
 
         if ('security-status' in data_new) and (args.skipsecurity == 0):
