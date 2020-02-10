@@ -257,17 +257,6 @@ def save_measurement(_filename, _data_new):
         raise MyPdnsError("Could not write measurement to %s" % _filename)
 
 
-def parse_pdns(_stdout):
-    _new_data = dict()
-
-    for val in _stdout.splitlines():
-        m = re.match(r"^([a-z0-9\-]+)\s+(\d+)$", val)
-        if m:
-            if m.group(1) in watchlist:
-                _new_data[m.group(1)] = int(m.group(2))
-    return _new_data
-
-
 def filter_data(_data_raw, _watchlist):
     _data_new = dict()
     for _key in _data_raw:
