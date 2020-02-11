@@ -1,6 +1,7 @@
 ![GitHub release](https://img.shields.io/github/release/worldstream-labs/check_powerdns_rec.svg) 
 ![GitHub](https://img.shields.io/github/license/worldstream-labs/check_powerdns_rec.svg?color=blue) 
-![python 2](https://img.shields.io/badge/python-2-blue.svg)
+![python 2](https://img.shields.io/badge/python-2.7-blue.svg)
+![python 3](https://img.shields.io/badge/python-3-blue.svg)
 
 # PowerDNS Recursive Resolver check
 
@@ -10,7 +11,7 @@ warning/critical
 
 ## Installation and requirements
 
-*   Python 2.7
+*   Python 2.7 or Python 3.x
 *   [rec_control](https://doc.powerdns.com/recursor/manpages/rec_control.1.html)  
     rec_control is included in the PowerDNS package. It is used to send commands to a running PowerDNS nameserver.
 *   [monitoring-plugins](https://github.com/monitoring-plugins/monitoring-plugins)  
