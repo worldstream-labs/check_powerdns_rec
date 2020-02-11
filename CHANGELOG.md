@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- Python 3 support
+- Python 3.x support
 
 ## [1.1.0] - 2020-02-10
 ### Added
