@@ -86,10 +86,8 @@ def parse_args():
                         help="Scratch/temp directory. (Default %s)" % tempdir, type=str, default=tempdir)
     parser.add_argument('-p', '--perfdata', help='Print performance data, (default: off)', action='store_true')
     parser.add_argument('--skipsecurity', help='Skip PowerDNS security status, (default: off)', action='store_true')
-
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + __version__)
-    _args = parser.parse_args()
-    return _args
+    return parser.parse_args()
 
 
 class MStatus(object):
@@ -173,7 +171,7 @@ class PowerDnsApi(object):
                 raise MyPdnsError("Incorrect API Key!")
             if get_result.status_code != 200:
                 raise MyPdnsError("API unexpected result code %d" % get_result.status_code)
-            json_object = json.loads(get_result.content)
+            json_object = json.loads(get_result.content.decode('utf-8'))
             return json_object
         except requests.exceptions.ConnectionError:
             raise MyPdnsError("Error connecting to %s" % url)
