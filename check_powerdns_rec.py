@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-# Remi Frenay, WorldStream B.V., 2019
+# Remi Frenay, WorldStream B.V., 2019-2020
 # <rf@worldstream.nl>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,8 +18,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from builtins import object
 __author__ = 'Remi Frenay <rf@worldstream.nl>'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 __plugin_name__ = 'check_powerdns_rec.py'
 
 import os
@@ -82,13 +86,11 @@ def parse_args():
                         help="Scratch/temp directory. (Default %s)" % tempdir, type=str, default=tempdir)
     parser.add_argument('-p', '--perfdata', help='Print performance data, (default: off)', action='store_true')
     parser.add_argument('--skipsecurity', help='Skip PowerDNS security status, (default: off)', action='store_true')
-
     parser.add_argument('-V', '--version', action='version', version='%(prog)s ' + __version__)
-    _args = parser.parse_args()
-    return _args
+    return parser.parse_args()
 
 
-class MStatus:
+class MStatus(object):
     """Monitoring status enum"""
 
     def __init__(self):
@@ -98,7 +100,7 @@ class MStatus:
         self.UNKNOWN = 3
 
 
-class Monitoring:
+class Monitoring(object):
     """"Monitoring"""
 
     def __init__(self):
@@ -142,7 +144,7 @@ class Monitoring:
         sys.exit(self.status)
 
 
-class PowerDnsApi:
+class PowerDnsApi(object):
     """PowerDNS API"""
 
     def __init__(self, api_host, api_port, api_key):
@@ -169,13 +171,13 @@ class PowerDnsApi:
                 raise MyPdnsError("Incorrect API Key!")
             if get_result.status_code != 200:
                 raise MyPdnsError("API unexpected result code %d" % get_result.status_code)
-            json_object = json.loads(get_result.content)
+            json_object = json.loads(get_result.content.decode('utf-8'))
             return json_object
         except requests.exceptions.ConnectionError:
             raise MyPdnsError("Error connecting to %s" % url)
 
 
-class PowerDnsCtrlTool:
+class PowerDnsCtrlTool(object):
     """PowerDNS Control Tool"""
 
     pdns_tool = 'rec_control'
@@ -187,7 +189,7 @@ class PowerDnsCtrlTool:
     def get_all(self):
         data = dict()
         stdout = self.execute('get-all')
-        for val in stdout.splitlines():
+        for val in stdout.decode('utf-8').splitlines():
             m = re.match(r"^([a-z0-9\-]+)\s+(\d+)$", val)
             if m:
                 data[m.group(1)] = int(m.group(2))
@@ -213,7 +215,7 @@ class PowerDnsCtrlTool:
             raise MyPdnsError("Control command '%s' not found." % self.pdns_tool)
 
 
-class PowerDnsFake:
+class PowerDnsFake(object):
     """PowerDNS Fake class for testing"""
 
     def __init__(self):
@@ -266,16 +268,16 @@ def calc_avgps(_data_old, _data_new):
 
     try:
         elapsed = _data_new['epoch'] - _data_old['epoch']
-        for _label, _value in _data_old.items():
+        for _label, _value in list(_data_old.items()):
             if (_label in _data_new) and (_label in avglist):
                 delta = _data_new[_label] - _value
-                _data_avg[_label] = delta / elapsed
+                _data_avg[_label] = round(delta/elapsed)
                 if delta < 0:
                     return dict(), 0
                 if _label in querylist:
                     _queries += delta
         _queries /= elapsed
-        return _data_avg, _queries
+        return _data_avg, round(_queries)
     except KeyError:
         return dict(), 0
     except ZeroDivisionError:
