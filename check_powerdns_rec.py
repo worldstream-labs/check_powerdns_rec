@@ -157,7 +157,7 @@ class PowerDnsApi(object):
         json_object = self.execute('/api/v1/servers/localhost/statistics')
         for val in json_object:
             if ('type' in val) and ('name' in val) and ('value' in val) and (val['type'] == 'StatisticItem'):
-                data[val['name']] = int(val['value'])
+                data[val['name']] = float(val['value'])
         return data
 
     def execute(self, path):
